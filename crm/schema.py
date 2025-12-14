@@ -1,9 +1,7 @@
 import re
 import graphene
 from graphene_django import DjangoObjectType
-from django.db import transaction
 from django.core.exceptions import ValidationError
-from decimal import Decimal
 
 from .models import Customer, Product, Order
 from .filters import CustomerFilter, ProductFilter, OrderFilter
@@ -35,6 +33,7 @@ class OrderType(DjangoObjectType):
         fields = "__all__"
         interfaces = (graphene.relay.Node,)
 
+
 # ===================== MUTATIONS =====================
 
 class CreateCustomer(graphene.Mutation):
@@ -53,10 +52,10 @@ class CreateCustomer(graphene.Mutation):
         if phone and not re.match(r"^(\+\d{10,15}|\d{3}-\d{3}-\d{4})$", phone):
             raise ValidationError("Invalid phone format")
 
-        customer = Customer.objects.create(
-            name=name, email=email, phone=phone
-        )
+        customer = Customer(name=name, email=email, phone=phone)
+        customer.save()
         return CreateCustomer(customer=customer, message="Customer created")
+
 
 class BulkCreateCustomers(graphene.Mutation):
     customers = graphene.List(CustomerType)
@@ -74,17 +73,19 @@ class BulkCreateCustomers(graphene.Mutation):
                 if Customer.objects.filter(email=data.email).exists():
                     raise ValidationError("Email already exists")
 
-                customer = Customer.objects.create(
+                customer = Customer(
                     name=data.name,
                     email=data.email,
                     phone=data.phone
                 )
+                customer.save()
                 created.append(customer)
 
             except Exception as e:
                 errors.append(f"Row {idx + 1}: {str(e)}")
 
         return BulkCreateCustomers(customers=created, errors=errors)
+
 
 class CreateProduct(graphene.Mutation):
     product = graphene.Field(ProductType)
@@ -100,10 +101,10 @@ class CreateProduct(graphene.Mutation):
         if stock < 0:
             raise ValidationError("Stock cannot be negative")
 
-        product = Product.objects.create(
-            name=name, price=price, stock=stock
-        )
+        product = Product(name=name, price=price, stock=stock)
+        product.save()
         return CreateProduct(product=product)
+
 
 class CreateOrder(graphene.Mutation):
     order = graphene.Field(OrderType)
@@ -121,12 +122,11 @@ class CreateOrder(graphene.Mutation):
 
         total = sum([p.price for p in products])
 
-        order = Order.objects.create(
-            customer=customer,
-            total_amount=total
-        )
+        order = Order(customer=customer, total_amount=total)
+        order.save()
         order.products.set(products)
         return CreateOrder(order=order)
+
 
 # ===================== QUERY =====================
 
@@ -134,6 +134,7 @@ class Query(graphene.ObjectType):
     all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter)
     all_products = DjangoFilterConnectionField(ProductType, filterset_class=ProductFilter)
     all_orders = DjangoFilterConnectionField(OrderType, filterset_class=OrderFilter)
+
 
 # ===================== ROOT MUTATION =====================
 
