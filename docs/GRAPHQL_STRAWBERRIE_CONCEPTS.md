@@ -400,8 +400,6 @@ This setup is **production-ready**, secure, and frontend-friendly.
 * Add query depth limiting
 * Introduce DataLoaders
 
-```
-
 ---
 
 ## 17. Role-Based Permissions
