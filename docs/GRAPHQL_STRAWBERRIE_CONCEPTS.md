@@ -1,10 +1,3 @@
-Great — below is a **complete, production-ready `GRAPHQL_CONCEPTS.md`** rewritten for **Strawberry GraphQL**, including **JWT authentication** and a **real-world Django project structure**.
-
-You can copy-paste this directly into your repo.
-
----
-
-````md
 # GraphQL Concepts with Django (Strawberry GraphQL)
 
 ## Table of Contents
