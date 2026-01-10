@@ -7,4 +7,3 @@ class Query(CRMQuery, graphene.ObjectType):
 class Mutation(CRMMutation, graphene.ObjectType):
     pass
 
-schema = graphene.Schema(query=Query, mutation=Mutation)
