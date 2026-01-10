@@ -1,385 +1,95 @@
-# 📊 ALX Backend GraphQL CRM
+# ALX Backend: Crons, Scheduling, and Automating Tasks
 
-## 📌 Project Overview
+This project focuses on automating repetitive tasks within a Django-based CRM application. It covers three levels of automation: native System Crontabs, Django-integrated Crons, and Distributed Task Queues (Celery).
 
-This project is part of the **ALX ProDev Backend curriculum** and focuses on **understanding GraphQL** and **building a real-world CRM (Customer Relationship Management) API** using:
+## 🚀 Features
 
-* **Django**
-* **Graphene-Django (GraphQL for Django)**
-* **Docker**
-* **django-filter**
+### 1. System Cron Jobs (Native Unix)
+- **Customer Cleanup**: A shell script (`clean_inactive_customers.sh`) that identifies and deletes customers with no orders in the last year.
+- **Order Reminders**: A Python script (`send_order_reminders.py`) that queries the GraphQL API to find recent orders and logs reminders.
 
-Instead of using traditional REST APIs with many endpoints, we built a **single GraphQL endpoint** that allows clients to request **exactly the data they need**.
+### 2. Django-Crontab (Integrated)
+- **Heartbeat Logger**: A recurring task that logs the system status every 5 minutes to verify application health.
+- **Low Stock रेस्टॉक (Restock)**: A 12-hour cron job that triggers a GraphQL mutation to restock products with less than 10 units.
 
----
-
-## 🎯 Learning Objectives
-
-By completing this project, we learned how to:
-
-* Understand **GraphQL vs REST**
-* Design a **GraphQL schema**
-* Create **queries and mutations**
-* Integrate **Django models** with GraphQL
-* Handle **validation and errors**
-* Support **bulk operations**
-* Add **filtering and searching**
-* Use **Docker** for reproducible development environments
+### 3. Celery & Celery Beat (Distributed)
+- **Weekly CRM Report**: A robust, scheduled task that fetches total customers, orders, and revenue via GraphQL and generates a summary log every Monday at 6:00 AM.
 
 ---
 
-## 🧠 Key Concepts Explained (Beginner Friendly)
+## 🛠 Setup & Installation
 
-### 1️⃣ What is GraphQL?
+### Prerequisites
+- Python 3.x
+- Redis Server (Required for Celery)
+- SQLite (Default Database)
 
-GraphQL is a **query language for APIs**.
+### Installation Steps
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/alx-backend-graphql_crm.git
+   cd alx-backend-graphql_crm
+   ```
 
-Instead of:
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```
-/customers/
-/customers/1/
-/customers/1/orders/
-```
+3. **Install & Start Redis**:
+   ```bash
+   sudo apt update
+   sudo apt install redis-server -y
+   sudo systemctl start redis-server
+   ```
 
-GraphQL uses **one endpoint**:
-
-```
-/graphql
-```
-
-And the client decides **what data to fetch**.
-
-Example:
-
-```graphql
-{
-  customer {
-    name
-    orders {
-      totalAmount
-    }
-  }
-}
-```
-
-➡️ No over-fetching
-➡️ No under-fetching
-➡️ One request, precise data
+4. **Run Migrations**:
+   ```bash
+   python manage.py migrate
+   ```
 
 ---
 
-### 2️⃣ Why Django + Graphene?
+## 📅 Scheduling Tasks
 
-* **Django** gives us:
-
-  * ORM (database models)
-  * Migrations
-  * Admin panel
-* **Graphene-Django**:
-
-  * Converts Django models into GraphQL types
-  * Handles queries and mutations cleanly
-
----
-
-### 3️⃣ Why Docker?
-
-Docker ensures:
-
-* Same environment for everyone
-* No “works on my machine” problems
-* Easy setup in **GitHub Codespaces**
-
-We used Docker to:
-
-* Install Python dependencies
-* Run Django
-* Run migrations
-* Serve the GraphQL API
-
----
-
-## 🐳 Docker Setup Summary
-
-### Files Used
-
-| File                 | Purpose                            |
-| -------------------- | ---------------------------------- |
-| `Dockerfile`         | Builds Python + Django environment |
-| `docker-compose.yml` | Runs Django server                 |
-| `requirements.txt`   | Python dependencies                |
-
-### Run the Project
-
+### System Crontab (Tasks 0 & 1)
+To install the native cron jobs into your system:
 ```bash
-docker compose build
-docker compose run web python manage.py migrate
-docker compose up
+crontab crm/cron_jobs/customer_cleanup_crontab.txt
+crontab crm/cron_jobs/order_reminders_crontab.txt
 ```
 
-Access:
+### Django-Crontab (Tasks 2 & 3)
+To add the Django-managed jobs:
+```bash
+python manage.py crontab add
+python manage.py crontab show
+```
 
-```
-http://localhost:8000/graphql
-```
+### Celery Beat (Task 4)
+To run the asynchronous weekly report:
+1. **Start the Worker**:
+   ```bash
+   celery -A crm worker -l info
+   ```
+2. **Start the Beat Scheduler**:
+   ```bash
+   celery -A crm beat -l info
+   ```
 
 ---
 
 ## 📂 Project Structure
-
-```
-alx-backend-graphql_crm/
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── manage.py
-├── alx_backend_graphql_crm/
-│   ├── settings.py
-│   ├── urls.py
-│   ├── schema.py
-├── crm/
-│   ├── models.py
-│   ├── schema.py
-│   ├── filters.py
-│   └── migrations/
-```
-
----
-
-## ✅ Task Breakdown & What We Learned
-
----
-
-## 🟢 Task 0: Set Up GraphQL Endpoint
-
-### 🎯 Goal
-
-Create a basic GraphQL endpoint and verify it works.
-
-### What We Did
-
-* Created a GraphQL schema
-* Added a simple `hello` query
-* Connected `/graphql` endpoint
-
-### Code Example
-
-```graphql
-{
-  hello
-}
-```
-
-### What We Learned
-
-* How GraphQL schemas work
-* How resolvers return data
-* How to use GraphiQL for testing
-
----
-
-## 🟢 Task 1 & 2: CRM Models + GraphQL Mutations
-
-### 🎯 Goal
-
-Build a real CRM system with:
-
-* Customers
-* Products
-* Orders
-
-### Models Created
-
-| Model    | Purpose                     |
-| -------- | --------------------------- |
-| Customer | Stores client info          |
-| Product  | Stores items for sale       |
-| Order    | Links customers to products |
-
----
-
-### 🔹 Mutations Implemented
-
-#### 1️⃣ CreateCustomer
-
-Creates one customer with validation.
-
-Validation:
-
-* Email must be unique
-* Phone format must be valid
-
-What we learned:
-
-* Input validation
-* Custom error messages
-
----
-
-#### 2️⃣ BulkCreateCustomers
-
-Creates many customers in one request.
-
-Why?
-
-* Efficient for importing data
-* Real-world CRM use case
-
-Special feature:
-
-* **Partial success** (valid records are saved even if others fail)
-
-What we learned:
-
-* GraphQL input types
-* Transactions and error handling
-
----
-
-#### 3️⃣ CreateProduct
-
-Creates products with:
-
-* Positive price
-* Non-negative stock
-
-What we learned:
-
-* Business logic validation
-* Decimal handling
-
----
-
-#### 4️⃣ CreateOrder
-
-Creates an order with:
-
-* Existing customer
-* Multiple products
-* Automatic total calculation
-
-What we learned:
-
-* Many-to-many relationships
-* Nested GraphQL responses
-* Data consistency
-
----
-
-### Example Mutation
-
-```graphql
-mutation {
-  createOrder(input: {
-    customerId: "1",
-    productIds: ["1", "2"]
-  }) {
-    order {
-      customer { name }
-      products { name price }
-      totalAmount
-    }
-  }
-}
-```
-
----
-
-## 🟢 Task 3: Filtering & Searching
-
-### 🎯 Goal
-
-Allow users to **search and filter data** efficiently.
-
-### Tool Used
-
-**django-filter**
-
----
-
-### Filters Implemented
-
-#### Customers
-
-* Name (contains)
-* Email (contains)
-* Phone pattern
-* Date range
-
-#### Products
-
-* Name
-* Price range
-* Stock range
-* Low stock detection
-
-#### Orders
-
-* Total amount range
-* Date range
-* Customer name
-* Product name
-
----
-
-### Example Query
-
-```graphql
-query {
-  allCustomers(filter: { nameIcontains: "Ali" }) {
-    edges {
-      node {
-        name
-        email
-      }
-    }
-  }
-}
-```
-
-### What We Learned
-
-* Filtering related models
-* Efficient querying
-* Clean schema design
-
----
-
-## 🧪 Testing Tools Used
-
-* **GraphiQL** (built-in browser UI)
-* **Docker logs** for debugging
-* GraphQL introspection
-
----
-
-## 📚 Key Takeaways
-
-✔ GraphQL gives **flexible data querying**
-✔ Django integrates well with GraphQL
-✔ Docker simplifies setup and deployment
-✔ Validation and errors are critical
-✔ Filtering improves performance and usability
-
----
-
-## 🚀 Future Improvements
-
-* Authentication (JWT)
-* Pagination optimization
-* PostgreSQL database
-* GraphQL subscriptions
-* Kubernetes deployment
-
----
-
-## 🏁 Conclusion
-
-This project helped us move from **theory to practice** by building a **real-world GraphQL API** with Django.
-We learned how modern APIs are designed, secured, and optimized — skills essential for backend developers.
-
----
-
-**© 2025 ALX — ProDev Backend Program**
+- `crm/cron_jobs/`: Contains shell and python scripts for system-level crons.
+- `crm/cron.py`: Functions for `django-crontab`.
+- `crm/tasks.py`: Periodic tasks for Celery.
+- `crm/celery.py`: Celery application configuration.
+
+## 📝 Logs
+Task outputs can be monitored in the `/tmp/` directory:
+- `/tmp/customer_cleanup_log.txt`
+- `/tmp/order_reminders_log.txt`
+- `/tmp/crm_heartbeat_log.txt`
+- `/tmp/low_stock_updates_log.txt`
+- `/tmp/crm_report_log.txt`
 
